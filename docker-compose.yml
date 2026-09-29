@@ -1,0 +1,150 @@
+x-airflow-common: &airflow-common
+  build:
+    context: ./airflow
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres:5432/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+    MINIO_ENDPOINT: http://minio:9000
+    MINIO_ACCESS_KEY: minioadmin
+    MINIO_SECRET_KEY: minioadmin
+    MINIO_BUCKET: datalake
+    API_BASE_URL: http://api-simulator:8000
+    MART_DB_HOST: postgres
+    MART_DB_NAME: mart
+    MART_DB_USER: mart
+    MART_DB_PASSWORD: mart
+    SPARK_MASTER_URL: spark://spark-master:7077
+    # host обязан содержать схему spark://, иначе провайдер соберёт master="spark-master:7077"
+    # и spark-submit его отклонит. Ключ extra — именно deploy-mode (через дефис).
+    AIRFLOW_CONN_SPARK_DEFAULT: '{"conn_type":"spark","host":"spark://spark-master","port":7077,"extra":{"deploy-mode":"client"}}'
+    AIRFLOW_CONN_MART_POSTGRES: postgresql://mart:mart@postgres:5432/mart
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./spark/jobs:/opt/spark/jobs
+    - airflow_logs:/opt/airflow/logs
+  depends_on:
+    postgres:
+      condition: service_healthy
+    minio:
+      condition: service_healthy
+    spark-master:
+      condition: service_started
+
+services:
+
+  # --- источник: симулятор банковского API (клиенты, счета, транзакции) ---
+  api-simulator:
+    build: ./api_simulator
+    ports:
+      - "8000:8000"
+    environment:
+      SEED: "42"
+
+  # --- DataLake (S3-совместимое хранилище) ---
+  minio:
+    image: cgr.dev/chainguard/minio:latest
+    user: "0:0"   # образ по умолчанию не root; без этого MinIO не пишет в named volume
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+      MC_HOST_local: http://minioadmin:minioadmin@localhost:9000
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # --- единый Postgres: база airflow (метаданные) + база mart (витрина) ---
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./mart/init.sql:/docker-entrypoint-initdb.d/10-mart-init.sql
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # --- Spark-кластер: трансформация raw -> mart ---
+  spark-master:
+    image: apache/spark:3.5.1
+    hostname: spark-master
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master
+      --host spark-master --port 7077 --webui-port 8080
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    hostname: spark-worker
+    command: >
+      /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker
+      spark://spark-master:7077
+    environment:
+      SPARK_WORKER_MEMORY: 1G
+      SPARK_WORKER_CORES: 1
+      SPARK_WORKER_DIR: /opt/spark/work-dir
+    depends_on:
+      - spark-master
+
+  # --- Airflow: оркестрация (extract -> load raw, transform -> load mart) ---
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - "airflow db migrate && airflow users create --username admin --password admin --firstname admin --lastname admin --role Admin --email admin@example.com || true"
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8081:8080"
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # --- DQ dashboard: результаты качества + S2T + lineage ---
+  dq-dashboard:
+    build: ./dashboard
+    ports:
+      - "8501:8501"
+    environment:
+      DB_HOST: postgres
+      DB_NAME: mart
+      DB_USER: mart
+      DB_PASSWORD: mart
+      DB_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
+volumes:
+  minio_data:
+  postgres_data:
+  airflow_logs:

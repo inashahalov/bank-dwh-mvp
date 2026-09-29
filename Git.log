@@ -1,0 +1,221 @@
+2026-09-29 13:53:04.954 [info] [main] Log level: Info
+2026-09-29 13:53:04.954 [info] [main] Validating found git in: "git"
+2026-09-29 13:53:04.954 [info] [main] Using git "2.43.0" from "git"
+2026-09-29 13:53:04.954 [info] [Model][doInitialScan] Initial repository scan started
+2026-09-29 13:53:04.954 [info] [Model][doInitialScan] Initial repository scan completed - repositories (0), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2026-09-29 13:54:55.637 [info] [main] Log level: Info
+2026-09-29 13:54:55.637 [info] [main] Validating found git in: "git"
+2026-09-29 13:54:55.637 [info] [main] Using git "2.43.0" from "git"
+2026-09-29 13:54:55.637 [info] [Model][doInitialScan] Initial repository scan started
+2026-09-29 13:54:55.637 [info] > git rev-parse --show-toplevel [1020ms]
+2026-09-29 13:54:55.637 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:56.079 [info] > git rev-parse --show-toplevel [89ms]
+2026-09-29 13:54:56.079 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:56.093 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 13:54:56.093 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:56.104 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 13:54:56.104 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:56.113 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 13:54:56.113 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:56.122 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 13:54:56.122 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:56.131 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 13:54:56.131 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:56.133 [info] [Model][doInitialScan] Initial repository scan completed - repositories (0), closed repositories (0), parent repositories (0), unsafe repositories (0)
+2026-09-29 13:54:56.149 [info] > git rev-parse --show-toplevel [7ms]
+2026-09-29 13:54:56.149 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:57.266 [info] > git rev-parse --show-toplevel [1ms]
+2026-09-29 13:54:57.266 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:57.447 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 13:54:57.447 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:54:57.460 [info] > git rev-parse --show-toplevel [1ms]
+2026-09-29 13:54:57.460 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:55:34.106 [info] > git rev-parse --show-toplevel [9ms]
+2026-09-29 13:55:34.106 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 13:55:34.825 [info] > git rev-parse --show-toplevel [3ms]
+2026-09-29 13:55:34.825 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:41:41.332 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 14:41:41.332 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:42:35.648 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 14:42:35.648 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:50:16.884 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 14:50:16.884 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:50:41.833 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 14:50:41.833 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:52:53.642 [info] > git rev-parse --show-toplevel [1ms]
+2026-09-29 14:52:53.642 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:54:02.601 [info] > git rev-parse --show-toplevel [3ms]
+2026-09-29 14:54:02.601 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:54:05.138 [info] > git rev-parse --show-toplevel [1ms]
+2026-09-29 14:54:05.139 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:54:53.325 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 14:54:53.325 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 14:54:55.701 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 14:54:55.701 [info] fatal: not a git repository (or any of the parent directories): .git
+2026-09-29 15:13:18.770 [info] > git rev-parse --show-toplevel [2ms]
+2026-09-29 15:13:18.803 [info] > git rev-parse --git-dir --git-common-dir --show-superproject-working-tree [20ms]
+2026-09-29 15:13:18.824 [info] [Model][openRepository] Opened repository (path): /home/pc/Документы/dwh/bank-dwh-mvp
+2026-09-29 15:13:18.824 [info] [Model][openRepository] Opened repository (real path): /home/pc/Документы/dwh/bank-dwh-mvp
+2026-09-29 15:13:18.824 [info] [Model][openRepository] Opened repository (kind): repository
+2026-09-29 15:13:18.855 [info] > git config --get commit.template [3ms]
+2026-09-29 15:13:18.856 [info] > git config --get --local core.virtualfilesystem [15ms]
+2026-09-29 15:13:18.856 [warning] [Git][config] git config failed: Failed to execute git
+2026-09-29 15:13:18.871 [info] [Git][getRemotes] No remotes found in the git config file
+2026-09-29 15:13:18.873 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/master refs/remotes/master [2ms]
+2026-09-29 15:13:18.873 [warning] [Git][getBranch] No such branch: master
+2026-09-29 15:13:18.902 [info] > git status -z -uall [17ms]
+2026-09-29 15:13:18.902 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [4ms]
+2026-09-29 15:13:18.959 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/master refs/remotes/master [33ms]
+2026-09-29 15:13:18.959 [warning] [Git][getBranch] No such branch: master
+2026-09-29 15:13:18.960 [error] [GitHistoryProvider][resolveHEADMergeBase] Failed to resolve merge base for master: Error: No such branch: master.
+2026-09-29 15:13:18.964 [info] > git config --get commit.template [6ms]
+2026-09-29 15:13:18.979 [info] [Git][getRemotes] No remotes found in the git config file
+2026-09-29 15:13:18.983 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/master refs/remotes/master [4ms]
+2026-09-29 15:13:18.983 [warning] [Git][getBranch] No such branch: master
+2026-09-29 15:13:19.012 [info] > git status -z -uall [19ms]
+2026-09-29 15:13:19.012 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [9ms]
+2026-09-29 15:13:19.349 [info] > git check-ignore -v -z --stdin [2ms]
+2026-09-29 15:13:19.400 [info] > git show --textconv :scripts/inject_bad_data.sql [34ms]
+2026-09-29 15:13:19.400 [info] > git show --textconv HEAD:scripts/inject_bad_data.sql [24ms]
+2026-09-29 15:13:19.412 [info] > git check-ignore -v -z --stdin [1ms]
+2026-09-29 15:13:19.413 [info] > git ls-files --stage -- scripts/inject_bad_data.sql [26ms]
+2026-09-29 15:13:19.437 [info] > git ls-tree -l HEAD -- scripts/inject_bad_data.sql [39ms]
+2026-09-29 15:13:19.437 [info] fatal: Not a valid object name HEAD
+2026-09-29 15:13:19.448 [info] > git cat-file -s 1a85292e7fa1ce7babca07e1ddc6db347add0c3a [25ms]
+2026-09-29 15:13:19.449 [info] > git hash-object -t tree /dev/null [14ms]
+2026-09-29 15:13:19.450 [warning] [GitFileSystemProvider][readFile] File not found - git:/home/pc/%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/dwh/bank-dwh-mvp/scripts/inject_bad_data.sql.git?%7B%22path%22%3A%22%2Fhome%2Fpc%2F%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B%2Fdwh%2Fbank-dwh-mvp%2Fscripts%2Finject_bad_data.sql%22%2C%22ref%22%3A%22HEAD%22%7D
+2026-09-29 15:13:19.450 [info] > git hash-object -t tree /dev/null [3ms]
+2026-09-29 15:13:19.450 [warning] [GitFileSystemProvider][stat] File not found - git:/home/pc/%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/dwh/bank-dwh-mvp/scripts/inject_bad_data.sql.git?%7B%22path%22%3A%22%2Fhome%2Fpc%2F%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B%2Fdwh%2Fbank-dwh-mvp%2Fscripts%2Finject_bad_data.sql%22%2C%22ref%22%3A%22HEAD%22%7D
+2026-09-29 15:16:42.086 [info] [Git][getRemotes] No remotes found in the git config file
+2026-09-29 15:16:42.087 [info] > git config --get commit.template [13ms]
+2026-09-29 15:16:42.087 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [1ms]
+2026-09-29 15:16:42.087 [warning] [Git][getBranch] No such branch: main
+2026-09-29 15:16:42.107 [info] > git status -z -uall [10ms]
+2026-09-29 15:16:42.108 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [1ms]
+2026-09-29 15:16:42.135 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [14ms]
+2026-09-29 15:16:42.135 [warning] [Git][getBranch] No such branch: main
+2026-09-29 15:16:42.135 [error] [GitHistoryProvider][resolveHEADMergeBase] Failed to resolve merge base for main: Error: No such branch: main.
+2026-09-29 15:16:42.139 [info] > git ls-files --stage -- scripts/inject_bad_data.sql [6ms]
+2026-09-29 15:16:42.150 [info] > git cat-file -s 1a85292e7fa1ce7babca07e1ddc6db347add0c3a [1ms]
+2026-09-29 15:16:42.165 [info] > git show --textconv :scripts/inject_bad_data.sql [2ms]
+2026-09-29 15:16:42.442 [info] > git check-ignore -v -z --stdin [1ms]
+2026-09-29 15:16:47.148 [info] [Git][getRemotes] No remotes found in the git config file
+2026-09-29 15:16:47.149 [info] > git config --get commit.template [12ms]
+2026-09-29 15:16:47.149 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [2ms]
+2026-09-29 15:16:47.149 [warning] [Git][getBranch] No such branch: main
+2026-09-29 15:16:47.171 [info] > git status -z -uall [11ms]
+2026-09-29 15:16:47.173 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [2ms]
+2026-09-29 15:16:47.510 [info] > git check-ignore -v -z --stdin [1ms]
+2026-09-29 15:20:11.950 [info] > git -c i18n.logOutputEncoding=UTF-8 log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [2ms]
+2026-09-29 15:20:11.950 [info] fatal: bad revision 'refs/heads/main'
+2026-09-29 15:20:11.950 [error] [GitHistoryProvider][provideHistoryItems] Failed to get history items with options '{"historyItemRefs":["refs/heads/main"],"limit":50,"skip":0}': Failed to execute git {
+  "exitCode": 128,
+  "gitCommand": "-c",
+  "stdout": "",
+  "stderr": "fatal: bad revision 'refs/heads/main'\n"
+}
+2026-09-29 15:20:12.615 [info] > git check-ignore -v -z --stdin [2ms]
+2026-09-29 15:20:37.775 [info] > git -c i18n.logOutputEncoding=UTF-8 log --format=%H%n%aN%n%aE%n%at%n%ct%n%P%n%D%n%B -z --shortstat --diff-merges=first-parent -n50 --skip=0 --topo-order --decorate=full --stdin [2ms]
+2026-09-29 15:20:37.775 [info] fatal: bad revision 'refs/heads/main'
+2026-09-29 15:20:37.775 [error] [GitHistoryProvider][provideHistoryItems] Failed to get history items with options '{"historyItemRefs":["refs/heads/main"],"limit":50,"skip":0}': Failed to execute git {
+  "exitCode": 128,
+  "gitCommand": "-c",
+  "stdout": "",
+  "stderr": "fatal: bad revision 'refs/heads/main'\n"
+}
+2026-09-29 15:21:47.850 [info] > git remote add origin https://github.com/inashahalov/bank-dwh-mvp.git [4ms]
+2026-09-29 15:21:47.879 [info] > git config --get commit.template [14ms]
+2026-09-29 15:21:47.880 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [2ms]
+2026-09-29 15:21:47.880 [warning] [Git][getBranch] No such branch: main
+2026-09-29 15:21:47.911 [info] > git status -z -uall [16ms]
+2026-09-29 15:21:47.913 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [3ms]
+2026-09-29 15:21:47.955 [info] > git push -u origin main [17ms]
+2026-09-29 15:21:47.955 [info] error: src refspec main does not match any
+error: failed to push some refs to 'https://github.com/inashahalov/bank-dwh-mvp.git'
+2026-09-29 15:21:47.979 [info] > git config --get commit.template [12ms]
+2026-09-29 15:21:47.979 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [1ms]
+2026-09-29 15:21:47.980 [warning] [Git][getBranch] No such branch: main
+2026-09-29 15:21:48.005 [info] > git status -z -uall [13ms]
+2026-09-29 15:21:48.006 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [2ms]
+2026-09-29 15:21:48.390 [info] > git check-ignore -v -z --stdin [2ms]
+2026-09-29 15:21:57.770 [info] > git ls-files --stage -- scripts/inject_bad_data.sql [2ms]
+2026-09-29 15:21:57.781 [info] > git cat-file -s 1a85292e7fa1ce7babca07e1ddc6db347add0c3a [2ms]
+2026-09-29 15:21:57.866 [info] > git show --textconv :scripts/inject_bad_data.sql [2ms]
+2026-09-29 15:25:44.537 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname)%00%(parent)%00%(*parent)%00%(authorname)%00%(*authorname)%00%(committerdate:unix)%00%(*committerdate:unix)%00%(subject)%00%(*subject)%00%(upstream:track) [2ms]
+2026-09-29 15:25:55.010 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) refs/heads [2ms]
+2026-09-29 16:05:15.103 [info] > git config --get commit.template [14ms]
+2026-09-29 16:05:15.104 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [2ms]
+2026-09-29 16:05:15.104 [warning] [Git][getBranch] No such branch: main
+2026-09-29 16:05:15.126 [info] > git status -z -uall [10ms]
+2026-09-29 16:05:15.127 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [2ms]
+2026-09-29 16:05:15.177 [info] > git ls-files --stage -- scripts/inject_bad_data.sql [3ms]
+2026-09-29 16:05:15.190 [info] > git cat-file -s 1a85292e7fa1ce7babca07e1ddc6db347add0c3a [2ms]
+2026-09-29 16:05:15.206 [info] > git show --textconv :scripts/inject_bad_data.sql [2ms]
+2026-09-29 16:05:15.458 [info] > git check-ignore -v -z --stdin [3ms]
+2026-09-29 16:05:20.163 [info] > git config --get commit.template [16ms]
+2026-09-29 16:05:20.164 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [2ms]
+2026-09-29 16:05:20.164 [warning] [Git][getBranch] No such branch: main
+2026-09-29 16:05:20.193 [info] > git status -z -uall [15ms]
+2026-09-29 16:05:20.195 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [2ms]
+2026-09-29 16:05:20.545 [info] > git check-ignore -v -z --stdin [2ms]
+2026-09-29 16:05:32.752 [info] > git check-ignore -v -z --stdin [2ms]
+2026-09-29 16:06:07.387 [info] > git show --textconv :README.md [12ms]
+2026-09-29 16:06:07.389 [info] > git ls-files --stage -- README.md [3ms]
+2026-09-29 16:06:07.401 [info] > git cat-file -s 8d8b6cccff7e95584831b20109e0f397c072606d [1ms]
+2026-09-29 16:06:07.898 [info] > git check-ignore -v -z --stdin [1ms]
+2026-09-29 16:21:14.837 [info] > git config --get commit.template [11ms]
+2026-09-29 16:21:14.837 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [1ms]
+2026-09-29 16:21:14.837 [warning] [Git][getBranch] No such branch: main
+2026-09-29 16:21:14.855 [info] > git status -z -uall [10ms]
+2026-09-29 16:21:14.855 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [1ms]
+2026-09-29 16:21:15.469 [info] > git check-ignore -v -z --stdin [2ms]
+2026-09-29 16:21:19.880 [info] > git config --get commit.template [9ms]
+2026-09-29 16:21:19.880 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [1ms]
+2026-09-29 16:21:19.881 [warning] [Git][getBranch] No such branch: main
+2026-09-29 16:21:19.904 [info] > git status -z -uall [12ms]
+2026-09-29 16:21:19.906 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [3ms]
+2026-09-29 16:27:43.233 [info] > git config --get commit.template [1ms]
+2026-09-29 16:27:43.248 [info] > git for-each-ref --format=%(refname)%00%(upstream:short)%00%(objectname)%00%(upstream:track)%00%(upstream:remotename)%00%(upstream:remoteref) refs/heads/main refs/remotes/main [2ms]
+2026-09-29 16:27:43.248 [warning] [Git][getBranch] No such branch: main
+2026-09-29 16:27:43.272 [info] > git status -z -uall [12ms]
+2026-09-29 16:27:43.274 [info] > git for-each-ref --sort -committerdate --format %(refname)%00%(objectname)%00%(*objectname) [2ms]
+2026-09-29 16:28:47.894 [info] > git show --textconv :docker-compose.yml [14ms]
+2026-09-29 16:28:47.897 [info] > git ls-files --stage -- docker-compose.yml [4ms]
+2026-09-29 16:28:47.916 [info] > git cat-file -s e8815858b16cfc8b3d34a117fa075a2343abad2c [3ms]
+2026-09-29 16:28:48.407 [info] > git check-ignore -v -z --stdin [1ms]
+2026-09-29 16:28:58.475 [info] > git show --textconv :README.md [15ms]
+2026-09-29 16:28:58.477 [info] > git ls-files --stage -- README.md [2ms]
+2026-09-29 16:28:58.491 [info] > git cat-file -s 8d8b6cccff7e95584831b20109e0f397c072606d [2ms]
+2026-09-29 16:30:03.661 [info] > git check-ignore -v -z --stdin [1ms]
+2026-09-29 16:30:03.722 [info] > git show --textconv :README.md [30ms]
+2026-09-29 16:30:03.723 [info] > git show --textconv HEAD:README.md [21ms]
+2026-09-29 16:30:03.725 [info] > git ls-files --stage -- README.md [13ms]
+2026-09-29 16:30:03.735 [warning] [GitFileSystemProvider][readFile] File not found - git:/home/pc/%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/dwh/bank-dwh-mvp/README.md.git?%7B%22path%22%3A%22%2Fhome%2Fpc%2F%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B%2Fdwh%2Fbank-dwh-mvp%2FREADME.md%22%2C%22ref%22%3A%22HEAD%22%7D
+2026-09-29 16:30:03.736 [info] > git ls-tree -l HEAD -- README.md [14ms]
+2026-09-29 16:30:03.736 [info] fatal: Not a valid object name HEAD
+2026-09-29 16:30:03.737 [warning] [GitFileSystemProvider][stat] File not found - git:/home/pc/%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B/dwh/bank-dwh-mvp/README.md.git?%7B%22path%22%3A%22%2Fhome%2Fpc%2F%D0%94%D0%BE%D0%BA%D1%83%D0%BC%D0%B5%D0%BD%D1%82%D1%8B%2Fdwh%2Fbank-dwh-mvp%2FREADME.md%22%2C%22ref%22%3A%22HEAD%22%7D
+2026-09-29 16:30:03.739 [info] > git cat-file -s 8d8b6cccff7e95584831b20109e0f397c072606d [5ms]
+2026-09-29 16:30:07.847 [info] > git check-ignore -v -z --stdin [8ms]
+2026-09-29 16:30:09.760 [info] > git check-ignore -v -z --stdin [9ms]
+2026-09-29 16:30:10.819 [info] > git check-ignore -v -z --stdin [2ms]
+2026-09-29 16:30:11.250 [info] > git check-ignore -v -z --stdin [10ms]
+2026-09-29 16:30:12.346 [info] > git check-ignore -v -z --stdin [3ms]
+2026-09-29 16:30:14.161 [info] > git check-ignore -v -z --stdin [7ms]
+2026-09-29 16:30:22.559 [info] > git check-ignore -v -z --stdin [2ms]
+2026-09-29 16:30:22.867 [info] > git check-ignore -v -z --stdin [9ms]
+2026-09-29 16:30:23.322 [info] > git check-ignore -v -z --stdin [6ms]
+2026-09-29 16:30:25.538 [info] > git check-ignore -v -z --stdin [9ms]
+2026-09-29 16:30:27.264 [info] > git check-ignore -v -z --stdin [8ms]
+2026-09-29 16:30:27.718 [info] > git check-ignore -v -z --stdin [7ms]
+2026-09-29 16:30:28.081 [info] > git check-ignore -v -z --stdin [9ms]
+2026-09-29 16:30:28.706 [info] > git check-ignore -v -z --stdin [9ms]
+2026-09-29 16:30:30.576 [info] > git check-ignore -v -z --stdin [6ms]
+2026-09-29 16:30:31.167 [info] > git check-ignore -v -z --stdin [12ms]
+2026-09-29 16:30:31.828 [info] > git check-ignore -v -z --stdin [10ms]
+2026-09-29 16:30:32.390 [info] > git check-ignore -v -z --stdin [5ms]
+2026-09-29 16:30:34.384 [info] > git check-ignore -v -z --stdin [7ms]
+2026-09-29 16:30:35.443 [info] > git check-ignore -v -z --stdin [10ms]
+2026-09-29 16:30:36.154 [info] > git check-ignore -v -z --stdin [9ms]
+2026-09-29 16:30:36.704 [info] > git check-ignore -v -z --stdin [6ms]
+2026-09-29 16:30:40.664 [info] > git check-ignore -v -z --stdin [10ms]
+2026-09-29 16:30:43.370 [info] > git check-ignore -v -z --stdin [9ms]
