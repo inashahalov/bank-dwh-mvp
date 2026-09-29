@@ -1,8 +1,11 @@
 *.zip
-.env
+venv/
 __pycache__/
-profiles.yml
-target/
-dbt_packages/
-logs/
-.venv/
+.env
+.idea/
+*.pycvenv/
+__pycache__/
+.env
+.idea/
+*.pyc
+*.log
