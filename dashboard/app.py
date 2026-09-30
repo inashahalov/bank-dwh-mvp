@@ -99,7 +99,7 @@ history = (results.assign(pass_flag=(results.status == "PASS").astype(int))
            .groupby("run_date")
            .agg(checks=("status", "size"), passed=("pass_flag", "sum"))
            .assign(quality_rate=lambda x: x.passed / x.checks * 100))
-st.line_chart(history[["quality_rate"]])
+st.bar_chart(history[["quality_rate"]].rename(index=str))
 
 with st.expander("Журнал всех прогонов (сырой dq.check_results)"):
     st.dataframe(raw_results, use_container_width=True, hide_index=True)
