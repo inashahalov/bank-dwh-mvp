@@ -52,6 +52,13 @@ if results.empty:
     st.info("DQ-результаты пока отсутствуют. Сначала запустите DAG data_quality_checks.")
     st.stop()
 
+# check_results - append-only журнал: каждый перезапуск DQ за ту же run_date
+# добавляет строки. Для KPI и графиков берём последний результат по каждой
+# паре (run_date, rule_code); сырой журнал - в expander ниже.
+# results отсортирован по checked_at DESC, поэтому keep="first" = самая свежая.
+raw_results = results
+results = results.drop_duplicates(subset=["run_date", "rule_code"], keep="first")
+
 # KPI
 latest = results.iloc[0]["run_date"]
 latest_df = results[results["run_date"] == latest]
@@ -93,6 +100,9 @@ history = (results.assign(pass_flag=(results.status == "PASS").astype(int))
            .agg(checks=("status", "size"), passed=("pass_flag", "sum"))
            .assign(quality_rate=lambda x: x.passed / x.checks * 100))
 st.line_chart(history[["quality_rate"]])
+
+with st.expander("Журнал всех прогонов (сырой dq.check_results)"):
+    st.dataframe(raw_results, use_container_width=True, hide_index=True)
 
 with st.expander("Каталог DQ-правил"):
     st.dataframe(catalog, use_container_width=True, hide_index=True)

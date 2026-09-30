@@ -24,7 +24,7 @@ Spark-джоб трансформации raw -> mart.
 """
 import sys
 
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, Window
 from pyspark.sql import functions as F
 
 BANKS = ["vtb", "sber", "rshb"]
@@ -36,6 +36,29 @@ BUCKET = "datalake"
 def read_raw_json(spark, entity: str, ds: str):
     paths = [f"s3a://{BUCKET}/raw/{entity}/bank={bank}/dt={ds}/{entity}.json" for bank in BANKS]
     return spark.read.option("multiline", "true").json(paths)
+
+
+def dedup_with_reject(df, key: str, entity: str, ds: str):
+    """Дедупликация по бизнес-ключу без молчаливой потери информации.
+
+    Все строки, чей ключ встречается больше одного раза, сохраняются как есть
+    в s3a://datalake/reject/<entity>/dt=<ds>/, количество пишется в лог.
+    В mart уходит одна строка на ключ. Раньше здесь был голый dropDuplicates.
+    """
+    dup_rows = (
+        df.withColumn("_key_cnt", F.count(F.lit(1)).over(Window.partitionBy(key)))
+          .filter(F.col("_key_cnt") > 1)
+          .drop("_key_cnt")
+    )
+    n_dup_rows = dup_rows.count()
+    if n_dup_rows:
+        n_dup_keys = dup_rows.select(key).distinct().count()
+        dup_rows.write.mode("overwrite").json(f"s3a://{BUCKET}/reject/{entity}/dt={ds}")
+        print(f"[{ds}] WARNING {entity}: {n_dup_keys} дублирующихся ключей "
+              f"({n_dup_rows} строк) -> reject/{entity}/dt={ds}; в mart оставлена одна строка на ключ")
+    else:
+        print(f"[{ds}] {entity}: дублей по {key} нет")
+    return df.dropDuplicates([key])
 
 
 def age_band_expr(birth_date_col):
@@ -56,11 +79,14 @@ def main(ds: str):
         .getOrCreate()
     )
 
-    raw_clients_df = read_raw_json(spark, "clients", ds).select(
-        "client_id", "full_name",
-        F.to_date("birth_date").alias("birth_date"),
-        "segment", "region", "kyc_risk_level", "source_bank",
-    ).dropDuplicates(["client_id"])
+    raw_clients_df = dedup_with_reject(
+        read_raw_json(spark, "clients", ds).select(
+            "client_id", "full_name",
+            F.to_date("birth_date").alias("birth_date"),
+            "segment", "region", "kyc_risk_level", "source_bank",
+        ),
+        "client_id", "clients", ds,
+    )
 
     # --- реальные ПДн: только restricted, наружу не идут ---
     clients_pii_df = raw_clients_df.select(
@@ -76,19 +102,24 @@ def main(ds: str):
         "segment", "region", "kyc_risk_level", "source_bank",
     )
 
-    accounts_df = read_raw_json(spark, "accounts", ds).select(
-        "account_id", "client_id", "product_type", "currency",
-        F.to_date("opened_at").alias("opened_at"),
-        "is_active", "source_bank",
-    ).dropDuplicates(["account_id"])
+    accounts_df = dedup_with_reject(
+        read_raw_json(spark, "accounts", ds).select(
+            "account_id", "client_id", "product_type", "currency",
+            F.to_date("opened_at").alias("opened_at"),
+            "is_active", "source_bank",
+        ),
+        "account_id", "accounts", ds,
+    )
 
-    tx_df = read_raw_json(spark, "transactions", ds).select(
-        "transaction_id", "account_id", "client_id",
-        F.to_timestamp("tx_ts").alias("tx_ts"),
-        "tx_type", F.col("amount").cast("decimal(18,2)").alias("amount"),
-        "currency", "merchant_category", "is_flagged", "source_bank",
-    ).withColumn("load_batch_date", F.lit(ds).cast("date")) \
-     .dropDuplicates(["transaction_id"])
+    tx_df = dedup_with_reject(
+        read_raw_json(spark, "transactions", ds).select(
+            "transaction_id", "account_id", "client_id",
+            F.to_timestamp("tx_ts").alias("tx_ts"),
+            "tx_type", F.col("amount").cast("decimal(18,2)").alias("amount"),
+            "currency", "merchant_category", "is_flagged", "source_bank",
+        ).withColumn("load_batch_date", F.lit(ds).cast("date")),
+        "transaction_id", "transactions", ds,
+    )
 
     n_clients, n_accounts, n_tx = clients_df.count(), accounts_df.count(), tx_df.count()
     print(f"[{ds}] clients={n_clients} accounts={n_accounts} transactions={n_tx}")
