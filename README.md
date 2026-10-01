@@ -1,716 +1,222 @@
 # Bank Data Quality & Data Governance MVP
 
-Учебный pet-project на банковском домене, демонстрирующий практическую реализацию **Data Quality (DQ)** и отдельных элементов **Data Governance** вокруг DWH-контура.
+Учебный пет-проект на банковском домене: контур **Data Quality / Data Governance / Data Steward** вокруг небольшого DWH.
+Данные синтетические, проект не является production-системой и не отражает работу с данными конкретного банка.
 
-Проект построен на **синтетических данных** и предназначен для демонстрации технических и аналитических навыков. Он **не является production-системой**, не имитирует промышленный DWH конкретного банка и не заявляет учебную реализацию как коммерческий опыт.
+## Как это выглядит
 
-## Что демонстрирует проект
+**Чистый батч:** 10 из 10 проверок PASS.
 
-Основной акцент проекта — не на построении промышленного DWH, а на контроле качества данных и работе с метаданными вокруг DWH-контура.
+<img src="docs/01-dashboard-pass.png" alt="Dashboard: все проверки PASS" width="900">
 
-В проекте реализованы:
+**Плохие данные:** те же проверки ловят 4 нарушения, Quality rate падает до 60%.
 
-* каталог DQ-правил;
-* автоматическая проверка качества данных;
-* классификация нарушений по severity;
-* блокировка успешного завершения DQ-пайплайна при критических нарушениях;
-* регистрация DQ-инцидентов;
-* lifecycle обработки инцидента;
-* карантин проблемных записей;
-* повторная проверка после исправления;
-* Source-to-Target Mapping (S2T);
-* Data Lineage;
-* Data Dictionary;
-* выделение CDE / PII;
-* базовое разграничение доступа на уровне PostgreSQL;
-* DQ Dashboard на Streamlit.
+<img src="docs/02-dashboard-fail.png" alt="Dashboard: 4 нарушения" width="900">
 
-Упрощённый сценарий работы:
+**Инциденты открываются автоматически** (по одному на каждое нарушенное правило), строки-нарушители уходят в карантин:
 
-```text
-Bank API Simulator
-        ↓
-   Raw / MinIO
-        ↓
-  Spark transformation
-        ↓
- PostgreSQL mart
-        ↓
-    DQ checks
-        ↓
-   PASS / FAIL
-        ↓
-    Incident
-        ↓
-   Quarantine
-        ↓
-     Recheck
-        ↓
- RESOLVED / ACCEPTED
-        ↓
-    Dashboard
-```
+<img src="docs/04-incidents-open.png" alt="Четыре открытых DQ-инцидента" width="900">
 
----
+<img src="docs/03-quarantine.png" alt="Строки в карантине" width="420">
 
-## Ключевые возможности
+**После исправления** повторная проверка даёт PASS, инциденты переведены в `RESOLVED` (статусы после `OPEN` пока меняются вручную):
 
-### Data Quality
+<img src="docs/05-incidents-resolved.png" alt="Инциденты RESOLVED" width="900">
 
-Реализован каталог из 10 DQ-правил, охватывающих несколько измерений качества данных:
+## Что реализовано
 
-* Completeness;
-* Uniqueness;
-* Validity;
-* Consistency;
-* Freshness.
+- DQ-правила по измерениям Completeness / Uniqueness / Validity / Consistency / Freshness, критичность HIGH / MEDIUM / LOW хранится в `dq.rule_catalog` и влияет на поведение pipeline;
+- контроль ссылочной целостности на уровне DQ (в витрине нет FK);
+- журнал результатов `dq.check_results`, автоматическое открытие инцидентов `dq_incident.incidents`;
+- **HIGH-нарушение останавливает DAG**, MEDIUM / LOW заводят инцидент, но pipeline продолжается;
+- **автоматический карантин** строк-нарушителей в `dq_incident.quarantine_transactions` и удаление их из витрины;
+- дубли по бизнес-ключу при загрузке не теряются молча: все копии сохраняются в `s3a://datalake/reject/…`, количество пишется в лог;
+- Data Dictionary с PII-классификацией, Critical Data Elements, Source-to-Target Mapping, Data Lineage;
+- PII в отдельной схеме `restricted`, разграничение доступа ролями `analyst_ro` и `data_steward`;
+- Streamlit-дашборд (метрики считаются по последнему результату каждого правила).
 
-Правила хранятся в `dq.rule_catalog` и загружаются DQ DAG динамически.
-
-### DQ Incident Management
-
-При нарушении DQ-правила создаётся DQ-инцидент.
-
-Реализованный lifecycle:
+## Архитектура
 
 ```text
-OPEN
-  ↓
-TRIAGED
-  ↓
-IN_REMEDIATION
-  ↓
-RECHECK
-  ↓
-RESOLVED / ACCEPTED
+API simulator ─► Airflow ─► MinIO (raw) ─► Spark ─► PostgreSQL (mart + restricted)
+                                                          │
+                                                          ▼
+                                                    DQ checks (Airflow)
+                                      ┌───────────────────┼───────────────────┐
+                                      ▼                   ▼                   ▼
+                              dq.check_results   dq_incident.incidents   quarantine
+                                      │
+                                      ▼
+                              Streamlit dashboard
 ```
 
-Для инцидента фиксируются:
+Три DAG'а с явными зависимостями: `extract_raw` → `transform_load_mart` → `data_quality_checks`
+(каждый ждёт предыдущий через `ExternalTaskSensor` с той же логической датой).
+Spark-драйвер запускается в Airflow-контейнере (`deploy_mode=client`) и подключается к `spark-master:7077`.
 
-* сценарий;
-* DQ rule;
-* severity;
-* дата обнаружения;
-* статус;
-* категория root cause;
-* описание;
-* batch / run;
-* результаты повторной проверки.
+## DQ-правила
 
-### Quarantine
+| Код | Правило | Измерение | Критичность | Карантин строк |
+|---|---|---|---|---|
+| DQ-001 | `client_id` не NULL (`dim_client`) | completeness | HIGH | нет (dim) |
+| DQ-002 | `transaction_id` уникален | uniqueness | HIGH | нет |
+| DQ-003 | `amount >= 0` | validity | HIGH | да |
+| DQ-004 | `tx_type` из согласованного домена | validity | MEDIUM | да |
+| DQ-005 | счёт транзакции существует | consistency | HIGH | да |
+| DQ-006 | клиент транзакции существует | consistency | HIGH | да |
+| DQ-007 | клиент счёта существует | consistency | HIGH | нет (dim) |
+| DQ-008 | `load_batch_date` заполнена | completeness | HIGH | нет |
+| DQ-009 | `tx_ts` заполнен | completeness | HIGH | да (условие заложено) |
+| DQ-010 | за дату есть загруженный батч | freshness | HIGH | нет |
 
-Для row-level нарушений реализован механизм карантина.
+Полное описание: [`data_governance/dq_rule_catalog.md`](data_governance/dq_rule_catalog.md).
 
-Проблемные записи помещаются в:
+## Жизненный цикл инцидента
 
 ```text
-dq_incident.quarantine_transactions
+BAD DATA → DQ CHECK → INCIDENT (OPEN) → QUARANTINE → исправление в источнике → RECHECK → PASS → RESOLVED
 ```
 
-После этого некорректные записи удаляются из целевой таблицы:
+| Шаг | Как сейчас |
+|---|---|
+| Проверка, FAIL, открытие инцидента, карантин | автоматически (`data_quality_dag.py`) |
+| Статусы после `OPEN` (`TRIAGED`, `RESOLVED`, `ACCEPTED`), `root_cause` | вручную, SQL-примеры в `data_governance/incident_demo.sql` |
 
-```text
-mart.fact_transactions
-```
+Инцидент не дублируется: уникальность по `(rule_code, run_date)`.
 
-Обработка реализована идемпотентно: одна и та же запись не должна повторно попадать в карантин для одного и того же инцидента.
+## Запуск
 
-### Critical DQ violations
-
-Для критических нарушений используется `severity = HIGH`.
-
-При обнаружении критического нарушения DQ-task завершается с ошибкой, что позволяет показать сценарий:
-
-```text
-DQ violation
-      ↓
-    FAIL
-      ↓
-   Incident
-      ↓
- Quarantine
-      ↓
- Remediation
-      ↓
-   Recheck
-      ↓
-  RESOLVED
-```
-
----
-
-# DQ Rule Catalog
-
-| Код    | Проверка                                         | Dimension    | Severity |
-| ------ | ------------------------------------------------ | ------------ | -------- |
-| DQ-001 | `client_id` не должен быть NULL                  | Completeness | HIGH     |
-| DQ-002 | `transaction_id` должен быть уникальным          | Uniqueness   | HIGH     |
-| DQ-003 | `amount` не может быть отрицательным             | Validity     | HIGH     |
-| DQ-004 | `tx_type` должен входить в допустимый справочник | Validity     | MEDIUM   |
-| DQ-005 | `account_id` должен существовать                 | Consistency  | HIGH     |
-| DQ-006 | `client_id` должен существовать                  | Consistency  | HIGH     |
-| DQ-007 | Клиент счета должен существовать                 | Consistency  | HIGH     |
-| DQ-008 | Дата batch должна присутствовать                 | Completeness | HIGH     |
-| DQ-009 | Timestamp транзакции должен присутствовать       | Completeness | HIGH     |
-| DQ-010 | Ежедневный batch должен содержать данные         | Freshness    | HIGH     |
-
-Результаты проверок сохраняются в:
-
-```text
-dq.check_results
-```
-
-Для каждой проверки фиксируются:
-
-* DQ rule;
-* дата / batch;
-* PASS / FAIL;
-* количество проверенных записей;
-* количество нарушений;
-* severity.
-
----
-
-# Архитектура
-
-```text
-                    ┌─────────────────┐
-                    │    Bank API     │
-                    │    Simulator    │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │     Airflow     │
-                    │  extract_raw    │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │      MinIO      │
-                    │    raw layer    │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │      Spark      │
-                    │ transformation  │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │   PostgreSQL    │
-                    │      mart       │
-                    └────────┬────────┘
-                             │
-                             ▼
-                    ┌─────────────────┐
-                    │   Data Quality  │
-                    │       DAG       │
-                    └───────┬─┬───────┘
-                            │ │
-               ┌────────────┘ └──────────────┐
-               ▼                             ▼
-      ┌─────────────────┐          ┌──────────────────┐
-      │   DQ Results    │          │    Incidents     │
-      │                 │          │  + Quarantine    │
-      └────────┬────────┘          └──────────────────┘
-               │
-               ▼
-      ┌─────────────────┐
-      │    Streamlit    │
-      │    Dashboard    │
-      └─────────────────┘
-```
-
-Полная схема также представлена в:
-
-```text
-pictures/pipeline.svg
-```
-
----
-
-# Data Governance
-
-В проекте реализованы отдельные элементы Data Governance, связанные с DWH-контуром.
-
-## Data Dictionary
-
-Документ:
-
-```text
-data_governance/data_dictionary.md
-```
-
-Содержит описание основных сущностей и полей проекта.
-
-## Source-to-Target Mapping
-
-Документ:
-
-```text
-data_governance/source_to_target_mapping.md
-```
-
-S2T содержит:
-
-* source;
-* source field;
-* target;
-* target field;
-* transformation;
-* business rule;
-* DQ rule;
-* CDE / PII.
-
-Пример логики:
-
-```text
-Source:
-transactions.amount
-
-        ↓
-
-Transformation:
-CAST(...)
-
-        ↓
-
-Target:
-mart.fact_transactions.amount
-
-        ↓
-
-DQ:
-DQ-003 amount >= 0
-```
-
-S2T также представлен в базе данных:
-
-```text
-governance.s2t_mapping
-```
-
-## Data Lineage
-
-Основная цепочка:
-
-```text
-Bank API
-   ↓
-Airflow
-   ↓
-MinIO / Raw
-   ↓
-Spark
-   ↓
-PostgreSQL / Mart
-   ↓
-Data Quality
-   ↓
-DQ Results / Incidents
-   ↓
-Dashboard
-```
-
-Метаданные lineage хранятся в:
-
-```text
-governance.data_lineage
-```
-
-Документация:
-
-```text
-data_governance/data_lineage.md
-```
-
----
-
-# CDE / PII
-
-В проекте показано базовое разделение аналитических данных и ограниченных данных.
-
-Основные таблицы:
-
-```text
-mart.dim_client
-mart.dim_account
-mart.fact_transactions
-```
-
-Отдельная таблица для ограниченных данных:
-
-```text
-restricted.dim_client_pii
-```
-
-Пример PII:
-
-* `full_name`;
-* `birth_date`.
-
-В аналитическом контуре персональные данные не используются непосредственно там, где они не нужны для аналитической задачи.
-
----
-
-# RBAC
-
-В MVP продемонстрировано базовое разграничение доступа на уровне PostgreSQL.
-
-Используются роли:
-
-```text
-analyst_ro
-data_steward
-```
-
-Упрощённая модель:
-
-```text
-analyst_ro
-   ↓
-аналитические mart-таблицы
-
-data_steward
-   ↓
-аналитические таблицы
-   +
-restricted.dim_client_pii
-```
-
-Это **не корпоративная IAM/RBAC-платформа**, а демонстрация принципа разделения доступа к данным внутри учебного PostgreSQL-контура.
-
----
-
-# DQ Dashboard
-
-Для визуализации используется Streamlit.
-
-Dashboard позволяет посмотреть:
-
-* последний batch;
-* результаты DQ-проверок;
-* PASS / FAIL;
-* количество нарушений;
-* Quality Rate;
-* распределение нарушений по dimension;
-* историю запусков;
-* каталог DQ-правил;
-* DQ-инциденты;
-* S2T;
-* Data Lineage.
-
-Скриншоты:
-
-```text
-docs/01-dashboard-pass.png
-docs/02-dashboard-fail.png
-docs/03-incidents-resolved.png
-docs/03-quarantine.png
-```
-
----
-
-# Демонстрационный сценарий DQ-нарушения
-
-В проекте предусмотрен воспроизводимый сценарий для демонстрации работы DQ-контура.
-
-### 1. Внести некорректные данные
-
-```text
-scripts/inject_bad_data.sql
-```
-
-Например:
-
-* отрицательный `amount`;
-* NULL;
-* некорректный `tx_type`;
-* отсутствующая ссылка на account/client.
-
-### 2. Запустить DQ-проверку
-
-DQ DAG обнаруживает нарушение.
-
-### 3. Получить FAIL
-
-Критическое нарушение приводит к:
-
-```text
-PASS → FAIL
-```
-
-### 4. Создать инцидент
-
-Фиксируется DQ Incident.
-
-### 5. Поместить проблемные записи в quarantine
-
-```text
-dq_incident.quarantine_transactions
-```
-
-### 6. Выполнить remediation
-
-Некорректные записи удаляются из целевой таблицы.
-
-### 7. Выполнить повторную проверку
-
-После исправления выполняется `RECHECK`.
-
-### 8. Закрыть инцидент
-
-При успешной повторной проверке:
-
-```text
-RECHECK → RESOLVED
-```
-
-Для очистки демонстрационных данных:
-
-```text
-scripts/cleanup_bad_data.sql
-```
-
----
-
-# Pipeline
-
-В проекте используются три основных Airflow DAG:
-
-```text
-airflow/dags/extract_raw_dag.py
-airflow/dags/transform_load_mart_dag.py
-airflow/dags/data_quality_dag.py
-```
-
-Общая последовательность:
-
-```text
-extract_raw
-     ↓
-transform_load_mart
-     ↓
-data_quality
-```
-
-Spark используется для трансформации данных:
-
-```text
-spark://spark-master:7077
-```
-
----
-
-# Технологический стек
-
-| Технология     | Назначение                                  |
-| -------------- | ------------------------------------------- |
-| Python         | ETL/DQ-логика и автоматизация               |
-| SQL            | DQ-проверки, работа с данными и метаданными |
-| PostgreSQL     | DWH mart, metadata, DQ results, incidents   |
-| Apache Airflow | Оркестрация пайплайнов                      |
-| Apache Spark   | Трансформация данных                        |
-| MinIO          | Object Storage / raw layer                  |
-| Streamlit      | DQ Dashboard                                |
-| Docker Compose | Локальное развёртывание                     |
-| Git            | Контроль версий                             |
-
----
-
-# Структура проекта
-
-```text
-bank-dwh-mvp/
-│
-├── api_simulator/
-│   ├── app.py
-│   └── Dockerfile
-│
-├── airflow/
-│   ├── dags/
-│   │   ├── extract_raw_dag.py
-│   │   ├── transform_load_mart_dag.py
-│   │   └── data_quality_dag.py
-│   └── Dockerfile
-│
-├── dashboard/
-│   ├── app.py
-│   └── Dockerfile
-│
-├── data_governance/
-│   ├── data_dictionary.md
-│   ├── dq_rule_catalog.md
-│   ├── dq_incident_catalog.md
-│   ├── dq_dashboard.md
-│   ├── dq_incident_dashboard_queries.sql
-│   ├── source_to_target_mapping.md
-│   └── data_lineage.md
-│
-├── docs/
-│   ├── 01-dashboard-pass.png
-│   ├── 02-dashboard-fail.png
-│   ├── 03-incidents-resolved.png
-│   └── 03-quarantine.png
-│
-├── mart/
-│   └── init.sql
-│
-├── scripts/
-│   ├── cleanup_bad_data.sql
-│   └── inject_bad_data.sql
-│
-├── spark/
-│   └── jobs/
-│       └── transform.py
-│
-├── pictures/
-│   └── pipeline.svg
-│
-├── docker-compose.yml
-├── .env.example
-├── DOCKER_RUN.md
-└── README.md
-```
-
----
-
-# Быстрый запуск
+Нужны Docker и Docker Compose. Первая сборка занимает несколько минут (образы Airflow и Spark большие).
 
 ```bash
 git clone https://github.com/inashahalov/bank-dwh-mvp.git
 cd bank-dwh-mvp
-
 docker compose up -d --build
-
-docker compose ps
+docker compose ps          # postgres и minio healthy, airflow-init Exited (0)
 ```
 
-После запуска доступны основные компоненты проекта:
+DAG'и после первого старта выключены. Включить их (подождав ~1 минуту после старта):
 
-* Apache Airflow;
-* PostgreSQL;
-* MinIO;
-* Streamlit Dashboard;
-* Spark.
+```bash
+docker compose exec airflow-scheduler airflow dags unpause extract_raw
+docker compose exec airflow-scheduler airflow dags unpause transform_load_mart
+docker compose exec airflow-scheduler airflow dags unpause data_quality_checks
+```
 
-Подробная инструкция:
+Через 2–3 минуты все три прогона должны быть `success`
+(`docker compose exec airflow-scheduler airflow dags list-runs -d data_quality_checks`).
+
+| Сервис | Адрес | Доступ (демо) |
+|---|---|---|
+| Airflow | http://localhost:8081 | `admin` / `admin` |
+| DQ Dashboard | http://localhost:8501 | — |
+| Spark UI | http://localhost:8080 | — |
+| MinIO | http://localhost:9001 | `minioadmin` / `minioadmin` |
+| PostgreSQL | `localhost:5432`, БД `mart` | `mart` / `mart` |
+| API simulator | http://localhost:8000/docs | — |
+
+Все учётные данные демонстрационные, только для локального запуска.
+
+Остановка и очистка: `docker compose down -v`.
+
+## Сценарий: плохие данные → инцидент → карантин → RECHECK
+
+`scripts/inject_bad_data.sql` добавляет 4 заведомо плохие транзакции (ID от `9000000000001`):
+отрицательная сумма (DQ-003), недопустимый тип (DQ-004), несуществующий счёт (DQ-005), несуществующий клиент (DQ-006).
+Дата батча в скрипте зашита (`2026-09-28`), поэтому подставляется дата последнего загруженного батча:
+
+```bash
+D=$(docker compose exec -T postgres psql -U mart -d mart -At -c "select max(load_batch_date) from mart.fact_transactions")
+sed "s/2026-09-28/$D/g" scripts/inject_bad_data.sql | docker compose exec -T postgres psql -v ON_ERROR_STOP=1 -U mart -d mart
+docker compose exec airflow-scheduler airflow tasks clear data_quality_checks -s $D -e $D -y
+```
+
+Через минуту: на дашборде 4 нарушения, `Open incidents = 4`, в карантине 4 строки:
+
+```bash
+docker compose exec postgres psql -U mart -d mart -c "select q.quarantine_id, i.rule_code, q.transaction_id, q.reason from dq_incident.quarantine_transactions q join dq_incident.incidents i using (incident_id) order by 1;"
+```
+
+Строки из витрины уже удалены. RECHECK: снова `tasks clear data_quality_checks` с той же датой, все проверки PASS.
+Закрытие инцидентов и `scripts/cleanup_bad_data.sql` (удаляет остатки тестовых строк) описаны в `data_governance/incident_demo.sql`.
+
+Нарушение DQ-002 (дубль `transaction_id`) вставкой не воспроизвести: `transaction_id` это PRIMARY KEY, БД отклоняет такую строку раньше DQ.
+Так же защищены DQ-008 и DQ-009 (`NOT NULL`). DQ-правила при этом нужны как второй рубеж на случай изменения DDL.
+
+## Разграничение доступа
+
+PII (ФИО, дата рождения) лежит в `restricted.dim_client_pii`. В `mart.dim_client` ФИО хранится только в виде хэша.
+
+```bash
+docker compose exec -e PGPASSWORD=analyst_ro postgres psql -U analyst_ro -d mart -c "select * from restricted.dim_client_pii limit 1"
+# ожидается: permission denied for schema restricted
+docker compose exec -e PGPASSWORD=data_steward postgres psql -U data_steward -d mart -c "select * from restricted.dim_client_pii limit 1"
+# ожидается: строка с данными
+```
+
+## Проектные решения
+
+- **Идемпотентность:** факт перезаливается по батчу (`DELETE` по `load_batch_date`), измерения пересоздаются целиком.
+- **Два рубежа защиты:** PK / `NOT NULL` в БД, затем DQ-правила.
+- **Критичность влияет на код:** HIGH останавливает DAG, MEDIUM / LOW только открывают инцидент.
+- **Карантин не скрывает дефект:** строки копируются с причиной и ссылкой на инцидент, удаляются из витрины после всех проверок (порядок правил не влияет на результат).
+- **Дубли не теряются молча:** все копии уходят в `reject/`, в лог пишется число дублирующихся ключей.
+- **Метрики дашборда** берутся по последнему результату каждой пары `(run_date, rule_code)`; весь журнал доступен в разделе «Журнал всех прогонов».
+
+## Ограничения
+
+Учебный MVP, некоторые места упрощены сознательно:
+
+- данные синтетические и небольшие (тысячи строк);
+- проверки идут **после** загрузки в витрину; правильнее по схеме staging → validate → publish;
+- измерения пересоздаются каждый день: нет истории (SCD2) и суррогатных ключей;
+- карантин убирает строки из витрины до следующей загрузки батча, исправлять нужно источник;
+- дубли складываются в `reject/` в MinIO, но отдельного DQ-правила по этому слою пока нет;
+- ФИО маскируется хэшем `md5` без соли; в продукте нужен HMAC с секретом или токенизация;
+- `age_band` считается от текущей даты, а не от даты батча, поэтому бэкфилл не воспроизводим;
+- `check_results` дописывается при каждом перезапуске DQ (журнал); сводные метрики считаются поверх него;
+- статусы инцидента после `OPEN` и `root_cause` заполняются вручную;
+- S2T и lineage это metadata-артефакты, которые ведутся руками, а не результат сканера (Collibra, DataHub и т. п.);
+- в логах Airflow есть предупреждения: устаревший `PostgresOperator` и пустой Fernet-ключ (для демо допустимо).
+
+## Структура
 
 ```text
-DOCKER_RUN.md
+bank-dwh-mvp/
+├── airflow/dags/            extract_raw, transform_load_mart, data_quality_checks
+├── api_simulator/           источник данных
+├── spark/jobs/transform.py  raw → mart, маскирование PII, reject дублей
+├── dashboard/               Streamlit DQ Dashboard
+├── mart/init.sql            схемы, таблицы, роли, каталог правил
+├── data_governance/         словарь данных, каталог правил, S2T, lineage, сценарии инцидентов
+├── scripts/                 inject_bad_data.sql, cleanup_bad_data.sql
+├── docs/                    скриншоты
+├── docker-compose.yml
+└── DOCKER_RUN.md
 ```
 
----
+## Документация
 
-# Что демонстрирует проект с точки зрения компетенций
+- [`data_governance/data_dictionary.md`](data_governance/data_dictionary.md): словарь данных, PII, CDE
+- [`data_governance/dq_rule_catalog.md`](data_governance/dq_rule_catalog.md): каталог DQ-правил
+- [`data_governance/source_to_target_mapping.md`](data_governance/source_to_target_mapping.md): S2T
+- [`data_governance/data_lineage.md`](data_governance/data_lineage.md): lineage
+- [`data_governance/dq_incident_catalog.md`](data_governance/dq_incident_catalog.md): каталог сценариев инцидентов
+- [`data_governance/incident_demo.sql`](data_governance/incident_demo.sql), [`generate_dq_incidents.sql`](data_governance/generate_dq_incidents.sql): демонстрация инцидентов
+- [`DOCKER_RUN.md`](DOCKER_RUN.md): запуск подробнее
 
-## Data Quality
+Пример сквозного CDE: `bank_api.transactions.amount → mart.fact_transactions.amount → DQ-003 → dashboard`.
 
-Основной фокус проекта:
+## Что можно развивать
 
-* DQ dimensions;
-* DQ rule catalog;
-* severity;
-* PASS / FAIL;
-* quality metrics;
-* контроль критических нарушений;
-* quarantine;
-* remediation;
-* recheck;
-* resolution.
+1. Проверки до публикации в витрину (staging → validate → publish).
+2. DQ-правило и инцидент по `reject/`-слою.
+3. SCD2 для измерений, суррогатные ключи.
+4. Правила целиком из `dq.rule_catalog` (SQL и пороги в БД, а не в коде DAG'а).
+5. dbt tests или Great Expectations вместо собственного SQL-фреймворка.
+6. Псевдонимизация через HMAC, автоматическая смена статусов инцидентов.
+7. SLA / SLO качества данных.
 
-## Data Governance
+## Автор
 
-Демонстрируются:
-
-* Data Dictionary;
-* CDE / PII;
-* базовый RBAC;
-* Source-to-Target Mapping;
-* Data Lineage;
-* metadata tables.
-
-## DQ Incident Management
-
-Реализованы:
-
-* регистрация инцидента;
-* severity;
-* root cause;
-* lifecycle;
-* remediation;
-* quarantine;
-* recheck;
-* resolution.
-
-## DWH / Data Systems
-
-Проект демонстрирует понимание связанных с DWH задач:
-
-* source-to-target mapping;
-* контроль качества данных при загрузке;
-* работа с mart;
-* SQL;
-* зависимости между слоями;
-* описание происхождения данных;
-* работа с метаданными.
-
-## Data Engineering
-
-Data Engineering используется как поддерживающая часть проекта:
-
-* Airflow;
-* Spark;
-* MinIO;
-* PostgreSQL;
-* Docker Compose;
-* Python;
-* SQL.
-
-Проект **не позиционируется как доказательство production-опыта Data Engineer**.
-
----
-
-# Ограничения проекта
-
-Это учебный MVP, поэтому в нём отсутствуют или упрощены некоторые production-компоненты:
-
-* используются синтетические данные;
-* нет реальных банковских данных;
-* нет enterprise Data Catalog;
-* нет Collibra / Apache Atlas / DataHub;
-* RBAC реализован на уровне PostgreSQL;
-* lineage реализован как metadata-модель;
-* DQ rules не являются частью корпоративной DQ-платформы;
-* нет промышленной системы уведомлений;
-* нет интеграции с реальным ITSM;
-* нет production SLA/SLO;
-* нет реального enterprise IAM;
-* проект не заявляет опыт промышленной эксплуатации конкретного банковского DWH.
-
-Цель проекта — показать понимание принципов **Data Quality, Data Governance и работы с данными в DWH-контуре**, а также способность самостоятельно собрать воспроизводимый технический MVP.
-
----
-
-# Позиционирование
-
-Проект ориентирован прежде всего на следующие направления:
-
-* **Data Quality Engineer**
-* **Data Steward**
-* **Data Governance / Data Quality Analyst**
-* **DWH / Data Systems Analyst**
-
-Data Engineering здесь выступает как техническая основа для реализации DQ-контура, а не как основное позиционирование проекта.
-
-Проект не заменяет коммерческий опыт и не должен рассматриваться как подтверждение production-разработки DWH или Data Engineering.
-
----
-
-# Автор
-
-**Илья Нашахалов**
-
-IT / Banking / Data Quality / DWH / Data Governance
+Илья Нашахалов
