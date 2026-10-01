@@ -1,6 +1,6 @@
 # Bank Data Quality & Data Governance MVP
 
-Учебный пет-проект на банковском домене: контур **Data Quality / Data Governance / Data Steward** вокруг небольшого DWH.
+Проект на банковском домене: контур **Data Quality / Data Governance / Data Steward** вокруг небольшого DWH.
 Данные синтетические, проект не является production-системой и не отражает работу с данными конкретного банка.
 
 ## Как это выглядит
