@@ -36,7 +36,7 @@ production-ready enterprise DQ platform.
 from datetime import datetime, timedelta
 
 from airflow import DAG
-from airflow.exceptions import AirflowException
+from airflow.exceptions import AirflowFailException
 from airflow.sensors.external_task import ExternalTaskSensor
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.operators.python import PythonOperator
@@ -276,8 +276,10 @@ def run_checks(ds, **_):
 
     # Удаляем из витрины только ПОСЛЕ всех проверок, чтобы порядок правил
     # не влиял на результаты. Строки остаются в dq_incident.quarantine_transactions.
-    # Тот же прогон всё равно FAIL'ится (HIGH); повторный запуск (RECHECK)
-    # видит чистый батч и даёт PASS.
+    # Тот же прогон FAIL'ится (HIGH) без авто-ретрая: AirflowFailException
+    # ниже. Обычный AirflowException + retries=1 давал ложный PASS: ретрай
+    # видел уже очищенный батч. Повторная проверка (RECHECK) — только
+    # вручную, Clear после разбора инцидента.
     if quarantined_ids:
         cur.execute(
             "DELETE FROM mart.fact_transactions WHERE load_batch_date = %s AND transaction_id = ANY(%s)",
@@ -292,7 +294,7 @@ def run_checks(ds, **_):
     if all_failures:
         print("DQ failures (заведены/сверены с dq_incident.incidents): " + "; ".join(all_failures))
     if blocking_failures:
-        raise AirflowException(
+        raise AirflowFailException(
             "DQ-гейт заблокирован: провалены HIGH-проверки " + ", ".join(blocking_failures)
         )
     print(f"Критических (HIGH) нарушений нет для {ds}")
