@@ -72,6 +72,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./mart/init.sql:/docker-entrypoint-initdb.d/10-mart-init.sql
+      - ./mart/metadata_quality.sql:/docker-entrypoint-initdb.d/20-metadata-quality.sql
     ports:
       - "5432:5432"
     healthcheck:
@@ -139,6 +140,22 @@ services:
       DB_USER: mart
       DB_PASSWORD: mart
       DB_PORT: "5432"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # --- Grafana: динамика DQ, метрики ведения метаданных, качество по объектам каталога ---
+  # источник и дашборд провижинятся из ./grafana, в БД ходит под read-only ролью grafana_ro
+  grafana:
+    image: grafana/grafana:11.2.0
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       postgres:
         condition: service_healthy

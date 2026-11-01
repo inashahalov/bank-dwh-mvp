@@ -34,7 +34,9 @@
 - дубли по бизнес-ключу при загрузке не теряются молча: все копии сохраняются в `s3a://datalake/reject/…`, количество пишется в лог;
 - Data Dictionary с PII-классификацией, Critical Data Elements, Source-to-Target Mapping, Data Lineage;
 - PII в отдельной схеме `restricted`, разграничение доступа ролями `analyst_ro` и `data_steward`;
-- Streamlit-дашборд (метрики считаются по последнему результату каждого правила).
+- Streamlit-дашборд (метрики считаются по последнему результату каждого правила);
+- метрики качества ведения метаданных META-01…05 (описания таблиц и колонок, владелец, стюард, покрытие CDE DQ-правилами) с целевыми значениями и ежедневными снимками;
+- Grafana-дашборд: quality rate по дням, динамика метрик метаданных, качество данных по объектам каталога, рабочий список стюарда.
 
 ## Архитектура
 
@@ -111,6 +113,7 @@ docker compose exec airflow-scheduler airflow dags unpause data_quality_checks
 |---|---|---|
 | Airflow | http://localhost:8081 | `admin` / `admin` |
 | DQ Dashboard | http://localhost:8501 | — |
+| Grafana | http://localhost:3000 | `admin` / `admin` |
 | Spark UI | http://localhost:8080 | — |
 | MinIO | http://localhost:9001 | `minioadmin` / `minioadmin` |
 | PostgreSQL | `localhost:5432`, БД `mart` | `mart` / `mart` |
@@ -155,6 +158,29 @@ docker compose exec -e PGPASSWORD=data_steward postgres psql -U data_steward -d 
 # ожидается: строка с данными
 ```
 
+## Метрики ведения метаданных
+
+Описание объекта хранится в `COMMENT ON`, бизнес-владелец и стюард — в `governance.object_owner`
+(роль-владелец таблицы в СУБД — не владелец данных). Метрики считает `governance.v_metadata_quality`,
+ежедневный снимок пишет задача `take_metadata_snapshot` в DAG `data_quality_checks`.
+
+| Код | Метрика | Цель |
+|---|---|---|
+| META-01 | Таблицы с описанием | 100% |
+| META-02 | Колонки с описанием | 90% |
+| META-03 | Таблицы с бизнес-владельцем | 100% |
+| META-04 | Таблицы со стюардом | 100% |
+| META-05 | CDE, покрытые DQ-правилом | 100% |
+
+Результаты DQ привязаны к объектам каталога через `dq.rule_catalog.object_name`: `governance.v_object_quality`
+даёт качество по каждой таблице, `governance.v_metadata_gaps` — список того, что дозаполнить.
+
+Демо динамики — три снимка: исходное состояние → описания → владельцы:
+
+```bash
+docker compose exec -T postgres psql -U airflow -d mart -v ON_ERROR_STOP=1 < data_governance/metadata_quality_demo.sql
+```
+
 ## Проектные решения
 
 - **Идемпотентность:** факт перезаливается по батчу (`DELETE` по `load_batch_date`), измерения пересоздаются целиком.
@@ -178,7 +204,8 @@ docker compose exec -e PGPASSWORD=data_steward postgres psql -U data_steward -d 
 - `check_results` дописывается при каждом перезапуске DQ (журнал); сводные метрики считаются поверх него;
 - статусы инцидента после `OPEN` и `root_cause` заполняются вручную;
 - S2T и lineage это metadata-артефакты, которые ведутся руками, а не результат сканера (Collibra, DataHub и т. п.);
-- в логах Airflow есть предупреждения: устаревший `PostgresOperator` и пустой Fernet-ключ (для демо допустимо).
+- в логах Airflow есть предупреждения: устаревший `PostgresOperator` и пустой Fernet-ключ (для демо допустимо);
+- в демо метрик метаданных три снимка датируются задним числом, чтобы показать динамику за один запуск.
 
 ## Структура
 
@@ -188,7 +215,9 @@ bank-dwh-mvp/
 ├── api_simulator/           источник данных
 ├── spark/jobs/transform.py  raw → mart, маскирование PII, reject дублей
 ├── dashboard/               Streamlit DQ Dashboard
+├── grafana/                 провижининг источника и дашборда Grafana
 ├── mart/init.sql            схемы, таблицы, роли, каталог правил
+├── mart/metadata_quality.sql метрики ведения метаданных, снимки, роль grafana_ro
 ├── data_governance/         словарь данных, каталог правил, S2T, lineage, сценарии инцидентов
 ├── scripts/                 inject_bad_data.sql, cleanup_bad_data.sql
 ├── docs/                    скриншоты

@@ -300,6 +300,15 @@ def run_checks(ds, **_):
     print(f"Критических (HIGH) нарушений нет для {ds}")
 
 
+def take_metadata_snapshot(ds, **_):
+    # Снимок метрик ведения метаданных (governance.v_metadata_quality) за дату прогона.
+    # Повторный запуск за ту же дату перезаписывает снимок.
+    PostgresHook(postgres_conn_id="mart_postgres").run(
+        "SELECT governance.take_metadata_snapshot(%s::date)",
+        parameters=(ds,),
+    )
+
+
 default_args = {
     "owner": "data-quality",
     "retries": 1,
@@ -332,4 +341,13 @@ with DAG(
         op_kwargs={"ds": "{{ ds }}"},
     )
 
-    wait_for_mart_load >> dq
+    # Метаданные не зависят от результата проверок: снимок нужен и в день,
+    # когда HIGH-нарушение остановило DQ (AirflowFailException в run_checks)
+    metadata_snapshot = PythonOperator(
+        task_id="take_metadata_snapshot",
+        python_callable=take_metadata_snapshot,
+        op_kwargs={"ds": "{{ ds }}"},
+        trigger_rule="all_done",
+    )
+
+    wait_for_mart_load >> dq >> metadata_snapshot
