@@ -1,0 +1,270 @@
+{
+  "uid": "bank-dq-metadata",
+  "title": "Bank DQ: качество данных и ведения метаданных",
+  "tags": [
+    "data-quality",
+    "metadata",
+    "governance"
+  ],
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": true,
+  "timezone": "browser",
+  "refresh": "5m",
+  "time": {
+    "from": "now-30d",
+    "to": "now"
+  },
+  "templating": {
+    "list": []
+  },
+  "annotations": {
+    "list": []
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "timeseries",
+      "title": "DQ: quality rate по дням, %",
+      "description": "Доля правил в статусе PASS по последнему прогону каждого правила за дату (dq.v_daily_quality).",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "mart-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "showPoints": "always",
+            "pointSize": 7,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "mart-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT run_date::timestamp AS \"time\", quality_pct AS \"Quality rate\"\nFROM dq.v_daily_quality\nWHERE $__timeFilter(run_date)\nORDER BY 1"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Метаданные: динамика по Политике, %",
+      "description": "Ежедневные снимки governance.take_metadata_snapshot().",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "mart-pg"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percent",
+          "min": 0,
+          "max": 100,
+          "decimals": 1,
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "showPoints": "always",
+            "pointSize": 7,
+            "spanNulls": true
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "mart-pg"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT s.snapshot_date::timestamp AS \"time\", m.metric_name AS metric, s.value_pct AS value\nFROM governance.metadata_quality_snapshot s\nJOIN governance.metadata_metric m USING (metric_code)\nWHERE $__timeFilter(s.snapshot_date)\nORDER BY 1, 2"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "type": "table",
+      "title": "Метаданные сейчас: факт против цели",
+      "description": "governance.v_metadata_quality; целевые значения — governance.metadata_metric.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "mart-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 10,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "mart-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT metric_code AS \"Код\", metric_name AS \"Метрика\",\n       numerator || ' / ' || denominator AS \"Объекты\",\n       value_pct AS \"Факт, %\", target_pct AS \"Цель, %\",\n       CASE WHEN meets_target THEN 'да' ELSE 'нет' END AS \"В норме\"\nFROM governance.v_metadata_quality"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "type": "table",
+      "title": "Качество данных по объектам каталога (последний прогон)",
+      "description": "Результаты DQ привязаны к объектам через dq.rule_catalog.object_name.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "mart-pg"
+      },
+      "gridPos": {
+        "x": 10,
+        "y": 8,
+        "w": 14,
+        "h": 7
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "mart-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT table_fqn AS \"Объект\", coalesce(business_owner, '—') AS \"Владелец\",\n       coalesce(data_steward, '—') AS \"Стюард\", dq_rules AS \"DQ-правил\",\n       dq_failed AS \"Нарушено\", dq_failed_high AS \"Из них HIGH\",\n       dq_quality_pct AS \"Качество, %\", last_run_date AS \"Прогон\"\nFROM governance.v_object_quality\nORDER BY dq_quality_pct NULLS FIRST, table_fqn"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Что дозаполнить в каталоге",
+      "description": "Рабочий список стюарда: таблицы, затем CDE, затем остальные колонки.",
+      "datasource": {
+        "type": "grafana-postgresql-datasource",
+        "uid": "mart-pg"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 15,
+        "w": 24,
+        "h": 10
+      },
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "grafana-postgresql-datasource",
+            "uid": "mart-pg"
+          },
+          "editorMode": "code",
+          "format": "table",
+          "rawQuery": true,
+          "rawSql": "SELECT object_fqn AS \"Объект\", object_level AS \"Уровень\",\n       CASE WHEN is_cde THEN 'CDE' ELSE '' END AS \"CDE\", gaps AS \"Пробелы\"\nFROM governance.v_metadata_gaps"
+        }
+      ]
+    }
+  ]
+}

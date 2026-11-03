@@ -1,0 +1,15 @@
+apiVersion: 1
+datasources:
+  - name: mart
+    uid: mart-pg
+    type: grafana-postgresql-datasource   # id плагина в Grafana 11 (алиас: postgres)
+    url: postgres:5432
+    user: grafana_ro
+    secureJsonData:
+      password: grafana_ro
+    jsonData:
+      database: mart
+      sslmode: disable
+      postgresVersion: 1500
+    isDefault: true
+    editable: false
