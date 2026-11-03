@@ -99,10 +99,7 @@ dim_client.client_id
 
 ## Важное ограничение MVP
 
-Lineage описан вручную как metadata artifact. Это **не автоматический enterprise
-lineage scanner** и не заявка на опыт с Collibra/Apache Atlas/DataHub. На собеседовании
-корректно говорить: «я реализовал модель lineage и связал её с S2T и DQ metadata».
-
+Lineage описан вручную как metadata artifact. 
 ### Dashboard
 
 `dq.check_results` используется Streamlit Dashboard для отображения результатов DQ, истории качества и нарушений.
